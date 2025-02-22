@@ -3,8 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 
-/// A [PaintingContext] that unites all the painted rectangles.
-/// into a single rectangle.
+/// A [PaintingContext] that unites all the painted rectangles into a single rectangle.
 class UnitingCanvas implements Canvas {
   /// The united rectangle of all the painted rectangles.
   var unitedRect = Rect.zero;
@@ -37,6 +36,12 @@ class UnitingCanvas implements Canvas {
     ui.ClipOp clipOp = ui.ClipOp.intersect,
     bool doAntiAlias = true,
   }) {}
+
+  //[GO]: Este es le metodo que faltaba. 
+  @override
+  void clipRSuperellipse(ui.Rect rect, double radius) {
+    unitedRect = unitedRect.expandToInclude(rect);
+  }
 
   @override
   void drawArc(
@@ -136,7 +141,7 @@ class UnitingCanvas implements Canvas {
     ui.Paint paint,
   ) {
     if (points.isEmpty) return;
-    final path = Path()..moveTo(points.first.dx, points.first.dx);
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
     for (final point in points.skip(1)) {
       path.lineTo(point.dx, point.dy);
     }
@@ -160,6 +165,16 @@ class UnitingCanvas implements Canvas {
         bottomLeft: Radius.circular(rrect.blRadiusX),
         bottomRight: Radius.circular(rrect.brRadiusX),
       );
+    }
+  }
+
+  //[GO]: Este es le metodo que faltaba. 
+  @override
+  void drawRSuperellipse(ui.Rect rect, double radius, ui.Paint paint) {
+    unitedRect = unitedRect.expandToInclude(rect);
+    if (rect.size > biggestDescendant) {
+      biggestDescendant = rect.size;
+      borderRadius = BorderRadius.circular(radius);
     }
   }
 
