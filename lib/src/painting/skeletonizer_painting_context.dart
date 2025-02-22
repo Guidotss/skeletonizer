@@ -58,6 +58,7 @@ class SkeletonizerPaintingContext extends PaintingContext {
   bool _didPaint = false;
 
   @override
+  
   ui.Canvas get canvas =>
       isZone ? super.canvas : SkeletonizerCanvas(super.canvas, this);
 
@@ -100,6 +101,22 @@ class SkeletonizerPaintingContext extends PaintingContext {
     }
     child.paint(this, offset);
   }
+}
+
+/// A painting context for leaf nodes in the render tree
+class LeafPaintingContext extends PaintingContext {
+  LeafPaintingContext({
+    required ContainerLayer layer,
+    required this.shaderPaint,
+    required this.config,
+    required Rect estimatedBounds,
+  }) : super(layer, estimatedBounds);
+
+  final Paint shaderPaint;
+  final SkeletonizerConfigData config;
+
+  @override
+  Canvas get canvas => SkeletonizerCanvas(super.canvas, this as SkeletonizerPaintingContext);
 }
 
 /// A [Canvas] that draws a skeleton that represents the actual content
@@ -173,6 +190,12 @@ class SkeletonizerCanvas implements Canvas {
     bool doAntiAlias = true,
   }) =>
       parent.clipRect(rect, clipOp: clipOp, doAntiAlias: doAntiAlias);
+
+  // Método añadido para clipRSuperellipse
+  @override
+  void clipRSuperellipse(ui.Rect rect, double radius) {
+    parent.clipRRect(ui.RRect.fromRectAndRadius(rect, ui.Radius.circular(radius)));
+  }
 
   @override
   void drawArc(
@@ -353,6 +376,32 @@ class SkeletonizerCanvas implements Canvas {
     }
   }
 
+  // Método añadido para drawRSuperellipse
+  @override
+  void drawRSuperellipse(ui.Rect rect, double radius, ui.Paint paint) {
+    if (paint.color.opacity == 0) return;
+    context._didPaint = true;
+    final treatAsBone = context._treatedAsLeaf.containsFuzzy(rect.center);
+    if (treatAsBone) {
+      parent.drawRRect(
+        ui.RRect.fromRectAndRadius(rect, ui.Radius.circular(radius)),
+        paint.copyWith(shader: _shaderPaint.shader),
+      );
+    } else if (!_config.ignoreContainers) {
+      if (_config.containersColor != null) {
+        parent.drawRRect(
+          ui.RRect.fromRectAndRadius(rect, ui.Radius.circular(radius)),
+          paint.copyWith(color: _config.containersColor!),
+        );
+      } else {
+        parent.drawRRect(
+          ui.RRect.fromRectAndRadius(rect, ui.Radius.circular(radius)),
+          paint,
+        );
+      }
+    }
+  }
+
   @override
   void drawCircle(ui.Offset c, double radius, ui.Paint paint) {
     if (paint.color.opacity == 0) return;
@@ -464,24 +513,4 @@ class SkeletonizerCanvas implements Canvas {
 
   @override
   void restoreToCount(int count) => parent.restoreToCount(count);
-}
-
-/// A [PaintingContext] that marks all children as leafs
-/// and stops painting after first paintable child
-class LeafPaintingContext extends SkeletonizerPaintingContext {
-  /// Default constructor
-  LeafPaintingContext({
-    required super.layer,
-    required super.estimatedBounds,
-    required super.shaderPaint,
-    required super.config,
-  }) : super(isZone: false, animationValue: 0);
-
-  @override
-  void paintChild(RenderObject child, ui.Offset offset) {
-    if (!_didPaint) {
-      _treatedAsLeaf.add(child.paintBounds.shift(offset).center);
-      child.paint(this, offset);
-    }
-  }
 }

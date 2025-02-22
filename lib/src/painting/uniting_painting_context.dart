@@ -37,7 +37,6 @@ class UnitingCanvas implements Canvas {
     bool doAntiAlias = true,
   }) {}
 
-  //[GO]: Este es le metodo que faltaba. 
   @override
   void clipRSuperellipse(ui.Rect rect, double radius) {
     unitedRect = unitedRect.expandToInclude(rect);
@@ -168,7 +167,6 @@ class UnitingCanvas implements Canvas {
     }
   }
 
-  //[GO]: Este es le metodo que faltaba. 
   @override
   void drawRSuperellipse(ui.Rect rect, double radius, ui.Paint paint) {
     unitedRect = unitedRect.expandToInclude(rect);
